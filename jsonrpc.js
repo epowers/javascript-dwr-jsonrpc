@@ -9,8 +9,8 @@ this.jsonrpc = {
 
 // Declare Public methods
 (function(){
-    this.jsonrpc.rpc['service'] = jsonrpc_service;
-    this.jsonrpc.rpc['get'] = jsonrpc_get;
+    this.jsonrpc.rpc.service = jsonrpc_service;
+    this.jsonrpc.rpc.get = jsonrpc_get;
 })();
 
 
@@ -209,7 +209,7 @@ Factory.prototype = {
     		if( Array.isArray( _response )) {
         		for ( var key in _response ) {
                     var _key = _response[key];
-        	    	_obj[_key] = this.newFunction( _url, _key );
+                    this.parseServiceKey( _key );
         		}
         		name = undefined;
     			this._deferred = -1;
@@ -217,14 +217,26 @@ Factory.prototype = {
     			if( 'target' in _response ) {
     				_url = _response.target;
     			}
-        		for ( var key in _response.services ) {
-        	    	_obj[key] = this.newFunction( _url, key );
-        		}
+                for ( var key in _response.services ) {
+                    this.parseServiceKey( key );
+                }
         		name = undefined;
     			this._deferred = -1;
         	}
     	}
     	this._data.method = name;
+    },
+
+    parseServiceKey: function( key ) {
+        var _url = this._url;
+        var _obj = this._obj;
+        var tok = key.split('.');
+        while( tok.length > 1 ) {
+            var cls = tok.shift();
+            _obj[cls] = {};
+            _obj = _obj[cls];
+        }
+        _obj[key] = this.newFunction( _url, key );
     },
         
     call: function() {
@@ -400,11 +412,8 @@ Factory.prototype = {
         	return;
         }
 
-        var _url = this._url;
-        _response = _response.services;
-        for ( var key in _response ) {
-            // TODO handle class methods
-            _obj[key] = this.newFunction( _url, key );
+        for ( var key in _response.services ) {
+            this.parseServiceKey( key );
         }
     },
 
