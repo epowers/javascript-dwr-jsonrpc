@@ -1,0 +1,6 @@
+Javascript client centric JSON-RPC with annotations (decorators) for server host languages (currently PHP).
+
+Notes:
+
+* Firebug has major problems with XMLHttpRequest URLs that are empty, replaces the debug script with JSON.  To temp fix this, change the request url in several places from '' to '?'.
+
