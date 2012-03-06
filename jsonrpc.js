@@ -57,7 +57,7 @@ Factory.prototype = {
             return self.addCallback.call( self, callback );
         }
         this.isCallback = function( arg ) {
-            return typeof arg == 'function' && !( arg instanceof Callback );
+            return typeof arg == 'function' && arg.name != 'Callback';
         };
         
         var _obj = this._obj = Callback;
@@ -81,7 +81,7 @@ Factory.prototype = {
             return self_obj;
         }
         _rpc.isCallback = function( arg ) {
-            return typeof arg == 'function' && !( arg instanceof Callback );
+            return typeof arg == 'function' && arg.name != 'Callback';
         };
 
         var _obj = _rpc._obj = Callback;
@@ -163,7 +163,7 @@ Factory.prototype = {
         
         // default args
         if( callback ) this.addCallback( callback );
-        if( url == undefined ) url = '';
+        if( url == undefined ) url = '?';
         if( name == undefined ) name = '';
         if( args == undefined ) args = new Array();
         else args = this.popCallback( args );
@@ -188,13 +188,17 @@ Factory.prototype = {
         this._deferred = 0;
         for( var i in args ) {
             var arg = args[i];
-            if( typeof arg == 'function' && ! this.isCallback( arg )) {
-                arg.call( arg, function() {
-                    args[i] = this.valueOf();
-                    --self._deferred;
-                    if( self._deferred == 0 ) self.call();
-                });
-                ++this._deferred;
+            try {
+                args[i] = args[i].valueOf();
+            } catch( e ) {
+                if( typeof arg == 'function' && ! this.isCallback( arg )) {
+                    arg.call( arg, function() {
+                        args[i] = this.valueOf();
+                        --self._deferred;
+                        if( self._deferred == 0 ) self.call();
+                    });
+                    ++this._deferred;
+                }
             }
         }
     },
