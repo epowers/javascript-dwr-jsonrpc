@@ -464,21 +464,18 @@ Factory.prototype = {
     },
 
     newFunction: function( url, name ) {
-        var _obj = new Function( 'return jsonrpc.rpc.post( "' + url + '", "' + name + '", arguments );' );
-        return _obj;
+        function jsonrpc_post_instance() {
+            return jsonrpc_post( url, name, arguments );
+        }
+        return jsonrpc_post_instance;
     }
 };
 
 // Declare Public methods
-if(typeof jsonrpc=='undefined'){
-    jsonrpc = {};
-}
-jsonrpc.rpc = {
+return {
     service: jsonrpc_service,
     post: jsonrpc_post
 };
-
-return jsonrpc.rpc;
 }
 
 // end init
@@ -493,7 +490,8 @@ define(['dojo/_base/xhr'],function(xhr){
 // TODO: test jquery ajax
 catch(e){
     // or if no dojo or jquery xhr, init immediately with XMLHttpRequest
-    init();
+    if(typeof jsonrpc=='undefined'){ jsonrpc = {}; }
+    jsonrpc.rpc = init();
 }
 
 // END private context
