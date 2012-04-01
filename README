@@ -1,6 +1,9 @@
 Javascript JSON-RPC and SMD
 
-Javascript client centric JSON-RPC and JSON-RPC Service Mapping Description (SMD) with annotations (decorators) for server host languages (currently PHP and Django/Python).
+Features:
+* Javascript client centric JSON-RPC.  The client is functional without server-side scripting.
+* JSON-RPC Service Mapping Description (SMD) using annotations/decorators for server host languages, currently PHP and Django/Python.
+* A very simple Direct Web Remoting capability.  Decorate a server method, client asks for services and receives client-side proxy functions for each server method.
 
 Notes:
 
