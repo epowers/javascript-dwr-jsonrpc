@@ -1,6 +1,8 @@
-Javascript client centric JSON-RPC with annotations (decorators) for server host languages (currently PHP).
+Javascript JSON-RPC and SMD
+
+Javascript client centric JSON-RPC and JSON-RPC Service Mapping Description (SMD) with annotations (decorators) for server host languages (currently PHP and Django/Python).
 
 Notes:
 
-* Firebug has major problems with XMLHttpRequest URLs that are empty, replaces the debug script with JSON.  To temp fix this, change the request url in several places from '' to '?'.
-
+* Firebug has a problem with XMLHttpRequest URLs that are empty, replaces the debug script with JSON.  To temp fix this, change the request url in several places from '' to '?'.
+* As noted somewhere in the code, most of this was written on an iPad (using Textastic) on the bus.
