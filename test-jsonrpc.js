@@ -28,7 +28,7 @@ jsonrpc.rpc.service( /* implied url '', */ ['add', 'concat'] )
 });
 
 // batch call
-jsonrpc.rpc.get({
+jsonrpc.rpc.post({
     // url of server
     url: '',
     // result and method name are both concat
@@ -45,7 +45,7 @@ jsonrpc.rpc.get({
 });
 
 // batch with per-method callbacks
-jsonrpc.rpc.get({
+jsonrpc.rpc.post({
     str0: { concat: [ 'arg 4', 'arg 5' ] },
     add: [ 6, 7 ]
 
@@ -74,7 +74,7 @@ jsonrpc.rpc.service( function() {
 
 /*
 // batch cascaded get
-jsonrpc.rpc.get({
+jsonrpc.rpc.post({
     add0: { add: [ null, 2.3 ], 0: { add1: null }},
     add1: { add: [ 5.4, null ], 1: { add: [ 7.6, 8.7 ] }}
 }).add0( function() {

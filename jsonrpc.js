@@ -1,18 +1,15 @@
-// allow overrides
-this.jsonrpc = {
-	rpc: {}
-};
+(function() {
 
 //////////////////
 // Private context
-(function(){
 
-// Declare Public methods
-(function(){
-    this.jsonrpc.rpc.service = jsonrpc_service;
-    this.jsonrpc.rpc.get = jsonrpc_get;
-})();
+var dojo_xhr;
+var jquery_xhr; // not implemented yet
 
+///////
+// init
+
+function init() {
 
 /**
     Given an URI and name, generate functions from an SMD response.
@@ -31,7 +28,7 @@ function jsonrpc_service( url, name, args, callback ) {
     Given an URI, JSON-RPC method name, and arguments,
     Return a callback object that will receive the response data.
 */
-function jsonrpc_get( url, name, args, callback ) {
+function jsonrpc_post( url, name, args, callback ) {
     var _rpc = new Factory();
     _rpc.createCallback();
     _rpc.addCallback( function(){ _rpc.processBulk(); });
@@ -213,7 +210,7 @@ Factory.prototype = {
     		if( Array.isArray( _response )) {
         		for ( var key in _response ) {
                     var _key = _response[key];
-                    this.parseServiceKey( _key );
+                    this.parseServiceKey( _url, _key );
         		}
         		name = undefined;
     			this._deferred = -1;
@@ -222,7 +219,7 @@ Factory.prototype = {
     				_url = _response.target;
     			}
                 for ( var key in _response.services ) {
-                    this.parseServiceKey( key );
+                    this.parseServiceKey( _url, key );
                 }
         		name = undefined;
     			this._deferred = -1;
@@ -231,8 +228,7 @@ Factory.prototype = {
     	this._data.method = name;
     },
 
-    parseServiceKey: function( key ) {
-        var _url = this._url;
+    parseServiceKey: function( url, key ) {
         var _obj = this._obj;
         var tok = key.split('.');
         while( tok.length > 1 ) {
@@ -240,18 +236,31 @@ Factory.prototype = {
             _obj[cls] = {};
             _obj = _obj[cls];
         }
-        _obj[key] = this.newFunction( _url, key );
+        _obj[key] = this.newFunction( url, key );
     },
         
     call: function() {
     	if( this._deferred ) return;
         var data = JSON.stringify( this._data );
-        var xhr = new XMLHttpRequest();
-        xhr.onreadystatechange = this.jsonrpc_handle;
-        xhr.self = this;
-        xhr.open( 'POST', this._url );
-        xhr.setRequestHeader( 'Content-Type', 'application/json' );
-        xhr.send( data );
+
+        if( typeof dojo_xhr != 'undefined' ) {
+            dojo_xhr.post({
+                self: this,
+                url: this._url,
+                contentType: 'application/json',
+                handleAs: 'json',
+                postData: data,
+                load: this.handle_dojo_xhr_load,
+                error: this.handle_dojo_xhr_error
+            });
+        } else {
+            var _xhr = new XMLHttpRequest();
+            _xhr.onreadystatechange = this.handle_xhr;
+            _xhr.self = this;
+            _xhr.open( 'POST', this._url );
+            _xhr.setRequestHeader( 'Content-Type', 'application/json' );
+            _xhr.send( data );
+        }
     },
 
     addCallback: function( callback ) {
@@ -289,7 +298,7 @@ Factory.prototype = {
         callbacks.length = 0;
     },
 
-    jsonrpc_handle: function() {
+    handle_xhr: function() {
         if( this.readyState == this.DONE ) {
             var self = this.self;
             if( this.status == 200 ) {
@@ -312,6 +321,23 @@ Factory.prototype = {
             // call all callbacks
             self.processCallbacks();
         }
+    },
+    
+    handle_dojo_xhr_load: function(response, xhr) {
+        var self = this.self;
+        self._response = response;
+        // call all callbacks
+        self.processCallbacks();
+    },
+    
+    handle_dojo_xhr_error: function(error, xhr) {
+        var self = this.self;
+        var _obj = self._obj;
+        _obj.valueOf = _obj.toString = function() {
+            throw error;
+        };
+        // call all callbacks
+        self.processCallbacks();
     },
     
     throwInvalidResponse: function() {
@@ -389,13 +415,19 @@ Factory.prototype = {
         	};
         	return null;
         }
+        if( !_response ) {
+            _obj.valueOf = _obj.toString = function() {
+        		throw 'Invalid response (null Javascript object)';
+        	};
+        	return null;
+        }
         if( 'error' in _response ) {
             _obj.valueOf = _obj.toString = function() {
         		throw _response.error;
         	};
         	return null;
         }
-        if( ! 'result' in _response ) {
+        if( !('result' in _response) ) {
             _obj.valueOf = _obj.toString = function() {
         		throw 'Invalid response (not a JSON-RPC object)';
         	};
@@ -415,18 +447,56 @@ Factory.prototype = {
         	};
         	return;
         }
+        var target = this._url;
+        if( 'target' in _response && _response['target'] ) {
+            target = _response['target'];
+        }
 
-        for ( var key in _response.services ) {
-            this.parseServiceKey( key );
+        var services = _response.services;
+        for ( var key in services ) {
+            var service = services[key];
+            var url = target;
+            if( 'target' in service ) {
+                url = service['target'];
+            }
+            this.parseServiceKey( url, key );
         }
     },
 
     newFunction: function( url, name ) {
-        var _obj = new Function( 'return jsonrpc.rpc.get( "' + url + '", "' + name + '", arguments );' );
+        var _obj = new Function( 'return jsonrpc.rpc.post( "' + url + '", "' + name + '", arguments );' );
         return _obj;
     }
 };
 
-})();
+// Declare Public methods
+if(typeof jsonrpc=='undefined'){
+    jsonrpc = {};
+}
+jsonrpc.rpc = {
+    service: jsonrpc_service,
+    post: jsonrpc_post
+};
+
+return jsonrpc.rpc;
+}
+
+// end init
+///////////
+
+try{
+// defer until dojo.xhr loads
+define(['dojo/_base/xhr'],function(xhr){
+    dojo_xhr = xhr;
+    return init();
+});}
+// TODO: test jquery ajax
+catch(e){
+    // or if no dojo or jquery xhr, init immediately with XMLHttpRequest
+    init();
+}
+
 // END private context
 //////////////////////
+
+})();
